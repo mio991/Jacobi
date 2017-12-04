@@ -2,7 +2,7 @@
 #
 # Fuer das Numerik I Seminar.
 
-function res = Jacobi(A, b, x0=zeros(size(b)), eps=0.00001, omega = 1, doTests=true)
+function res = Jacobi(A, b, x0=zeros(size(b)), epsilon=0.00001, maxit=10000, omega = 1, doTests=true)
   res = 0;
   # Pretest for the Jacobi Methode
   
@@ -44,13 +44,11 @@ function res = Jacobi(A, b, x0=zeros(size(b)), eps=0.00001, omega = 1, doTests=t
   
   # Prepare Jacobi Methode
   B = diag(diag(A));
-  M = inv(B)*(B-omega*A)
+  M = inv(B)*(B-omega*A);
   Nb = omega*inv(B)*b;
   
-  # Calculate iteration depth if eps < 1 else depth = eps
-  depth = 0;
-  if eps < 1
-    nor = 0;
+  nor = inf;
+  if doTests
     #Chose Norm
     if r
       nor = inf;
@@ -59,26 +57,24 @@ function res = Jacobi(A, b, x0=zeros(size(b)), eps=0.00001, omega = 1, doTests=t
     elseif s
       nor = "fro";      
     endif
-    
-    #TODO: x1 missing
-    
-    #Calculate needed iteration depth.
-    q = norm(A, nor);
-    depth = ceil (log(eps*(1-q)/norm(b, nor))/log(q));
-  else
-    depth = ceil (eps);
   endif
   
+  #Calculate needed iteration depth.
+  q = norm(A, nor);
+  x1 = x=M*x0+Nb;
+  depth = ceil (log(epsilon*(1-q)/norm(x1-x0, nor))/log(q));
+  
+  depth = abs(min(abs(depth), abs(maxit)));
+  
+  x = x1;
+  
   # Iterate through Jacobi
-  res = iterate(zeros(size(b), 1), M, Nb, depth);
-endfunction
-
-function x = iterate(x, M, Nb, stepsleft)
-  x=M*x+Nb;
-  stepsleft--;
-  if(stepsleft > 0)
-    x = iterate(x, M, Nb, stepsleft);
-  endif
+  while depth > 0
+    x=M*x+Nb;
+    depth--;
+  endwhile
+  
+  res = x;
 endfunction
 
 function res = RowSumTest(A)  
